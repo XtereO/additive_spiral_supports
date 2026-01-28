@@ -22,7 +22,7 @@ pip install -r req.txt
 ```
 
 ## Launch the project
-Before launching be sure that you have the cat.stl file in the root of additive_spiral_supports. 
+Before launching be sure that you have the "cat.stl" file in the root of additive_spiral_supports. This file can be found at: https://disk.yandex.ru/d/aLFb94PN93zrDg.  
 After setting up the project we can launch the project (in root of additive_spiral_supports):
 
 `python supports_6.py`
