@@ -1,7 +1,8 @@
 # Launching details
 ## Setting up the project
 Cloning the realization of sorting points spirally:
-`git clone https://github.com/XtereO/sorting-points-spirally.git`
+
+`git clone https://github.com/XtereO/sorting_points_spirally.git`
 
 For each directory (first sorting_points_spirally, then additive_spiral_supports!):
 initializing virtual environment for each project (additive_spiral_supports and sorting_points_spirally)
