@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "additive_spiral_supports"
+version = "1.0.0"
+description = "This code helps to create supports"
+authors = [{ name = "XtereO", email = "fake@gmail.com" }]
+
+[tool.setuptools]
+packages = { find = { where = ["sorting_points_spirally"] } }
