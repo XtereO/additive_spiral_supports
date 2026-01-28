@@ -1,24 +1,29 @@
 # Launching details
 ## Setting up the project
-Cloning the realization of sorting points spirally in the root of the project (additive_spiral_supports):
+1. Cloning the realization of sorting points spirally in the root of the project (additive_spiral_supports):
 
 `git clone https://github.com/XtereO/sorting_points_spirally.git`
 
-For each directory (first in the root of sorting_points_spirally, then in the root of additive_spiral_supports!):
-
-- Initializing virtual environment for each project (additive_spiral_supports and sorting_points_spirally)
+2. Initializing virtual environment for in the root of additive_spiral_supports:
 
 `python -m venv venv`
 
-- Activating virtual environment
+3. Activating virtual environment:
 
 `.\venv\Scripts\activate`
 
-- Installing dependencies:
+4. Installing dependencies:
 
 ```
 pip install -e .
 pip install -r req.txt
+```
+
+5. Bounding sorting_points_spirally:
+
+```
+cd sorting_points_spirally
+pip install -e .
 ```
 
 ## Launch the project
