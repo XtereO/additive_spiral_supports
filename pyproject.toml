@@ -10,3 +10,6 @@ authors = [{ name = "XtereO", email = "fake@gmail.com" }]
 
 [tool.setuptools]
 packages = { find = { where = ["sorting_points_spirally"] } }
+
+[tool.poetry.dependencies]
+python = "^3.13.7"

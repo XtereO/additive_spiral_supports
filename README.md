@@ -1,5 +1,7 @@
 # Launching details
 ## Setting up the project
+0. This project is set up on Python 3.13.7. 
+
 1. Cloning the realization of sorting points spirally in the root of the project (additive_spiral_supports):
 
 `git clone https://github.com/XtereO/sorting_points_spirally.git`
