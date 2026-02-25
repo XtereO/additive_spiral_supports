@@ -52,11 +52,6 @@ example: `python supports_6.py 1 2 0.2 4 2 2 stl`
 
 The model with supports will be saved in the root of the directory additive_spiral_supports as "supported_model.stl"
 
-## Code details
-If you would like to turn off spiral ordering then in the code at line 890 put False value to the variable `spirally`.
-
-If you would like to turn off vitalization of the spiral algorithm then at line 892 put False value as the second variable of function `sort_points_spirally`. 
-
 # Project results
 Using the file "cat.stl" gives the following results:
 
