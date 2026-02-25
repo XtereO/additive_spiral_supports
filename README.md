@@ -43,6 +43,7 @@ Launching parameters:
 | support_tree_sections | int | quality of tree supports | 6 |
 | support_joint_subdivisions | int | quality of joints for connecting supports and a part (significantly influence on memory) | 4 |
 | export_format | string | the file format of model with supports you want to get | stl |
+
 In general launching looks like this:
 
 `python supports_6.py <spirally_pattern> <min_spacing> <support_thickness> <support_cylinder_sections> <support_tree_sections> <support_joint_subdivisions> <export_format>` 
