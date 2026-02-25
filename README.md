@@ -33,12 +33,21 @@ Before launching be sure that you have the "cat.stl" file in the root of additiv
 After setting up the project we can launch the project (in root of additive_spiral_supports):
 
 `python supports_6.py`
+Launching parameters:
+| Parameter title  | Values | Description | Default value |
+|------------------|--------|-------------|---------------|
+| spirally_pattern | 1 or 0 | 1 if it needs to connect supports spirally | 1 |
+| min_spacing | float | the min distance between two support points | 0.7 |
+| support_thickness | float | the thickness of cylinder supports | 0.2 |
+| support_cylinder_sections | int | quality of cylinder supports (the less value, the less memory it takes) | 8 |
+| support_tree_sections | int | quality of tree supports | 6 |
+| support_joint_subdivisions | int | quality of joints for connecting supports and a part (significantly influence on memory) | 4 |
+| export_format | string | the file format of model with supports you want to get | stl |
+In general launching looks like this:
 
-Actually if we would like to get the different export file format then we can pass it in launching command:
+`python supports_6.py <spirally_pattern> <min_spacing> <support_thickness> <support_cylinder_sections> <support_tree_sections> <support_joint_subdivisions> <export_format>` 
 
-`python supports_6.py <here goes the file format>` 
-
-example: `python supports_6.py stl`
+example: `python supports_6.py 1 2 0.2 4 2 2 stl`
 
 The model with supports will be saved in the root of the directory additive_spiral_supports as "supported_model.stl"
 

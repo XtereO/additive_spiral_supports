@@ -102,8 +102,9 @@ def generate_support_points(mesh, overhang_faces, angles, min_distance=0.7):
 
     # --- Группировка граней по spacing (округление уменьшает число групп)
     face_groups = defaultdict(list)
+    min_spacing_rounded = round(min_distance, 2)
     for i, face_idx in enumerate(overhang_faces):
-        spacing_rounded = round(spacings[i], 2)  # группировка с точностью 0.01
+        spacing_rounded = max(round(spacings[i], 2), min_spacing_rounded)  # группировка с точностью 0.01
         face_groups[spacing_rounded].append((face_idx, spacings[i], thicknesses[i]))
 
     z_min = mesh.bounds[0][2] - 10.0  # стартовая высота для лучей
@@ -418,7 +419,7 @@ def prepare_supports(mesh, support_points, point_params):
 
     return supports_info, base_points
 
-def build_support_cylinders(supports_info):
+def build_support_cylinders(supports_info, support_sections=8):
 
     """
     Строит цилиндры для опор на основе подготовленных данных.
@@ -432,7 +433,7 @@ def build_support_cylinders(supports_info):
         cylinder = trimesh.creation.cylinder(
             radius=support["radius"],
             height=support["height"],
-            sections=8,
+            sections=support_sections,
             transform=trimesh.transformations.translation_matrix(
                 support["center"]
             )
@@ -445,7 +446,7 @@ def build_support_cylinders(supports_info):
 
 def create_support_lines(base_points, groups, supports_info, model_mesh,
                         thickness=0.2, max_distance=5.0, min_height=1.0,
-                        height_multiplier=2.0, spirally=False):
+                        height_multiplier=2.0, spirally=False, support_sections=8):
     print("create_support_lines")
     def create_marker_sphere(position, radius, color):
         
@@ -521,7 +522,7 @@ def create_support_lines(base_points, groups, supports_info, model_mesh,
         cyl = trimesh.creation.cylinder(
             radius=radius,
             height=height,
-            sections=8
+            sections=support_sections
         )
         rot_axis = np.cross([0, 0, 1], direction)
         rot_angle = np.arccos(np.clip(np.dot([0, 0, 1], direction), -1.0, 1.0))
@@ -724,7 +725,7 @@ def create_support_lines(base_points, groups, supports_info, model_mesh,
     return trimesh.util.concatenate(support_lines) if support_lines else None
 
 def generate_tree_supports(base_points, supports_info, group_indices, model_mesh, 
-                          branch_length=0.5, angle_deg=30, offset=1.0, thickness=0.2):
+                          branch_length=0.5, angle_deg=30, offset=1.0, thickness=0.2, support_sections=6, support_subdivisions=4):
     print("generate_tree_supports")
     tree_branches = []
     thickness_branch = thickness / 4
@@ -823,12 +824,12 @@ def generate_tree_supports(base_points, supports_info, group_indices, model_mesh
                 over = thickness_branch/2
                 end_inc = tree_start + vec*(1 + over/length)
                 transform_inc = get_transform(tree_start, end_inc)
-                cyl_inc = trimesh.creation.cylinder(radius=thickness_branch, height=length+over, transform=transform_inc, sections=6)
+                cyl_inc = trimesh.creation.cylinder(radius=thickness_branch, height=length+over, transform=transform_inc, sections=support_sections)
                 cyl_inc.visual.vertex_colors = [255,255,0,180]
                 tree_branches.append(cyl_inc)
 
                 # 2) добавляем сферу-стык
-                joint = trimesh.creation.icosphere(subdivisions=4, radius=thickness_branch*1.1)
+                joint = trimesh.creation.icosphere(subdivisions=support_subdivisions, radius=thickness_branch*1.1)
                 joint.apply_translation(branch_tip)
                 joint.visual.vertex_colors = [255,255,0,180]
                 tree_branches.append(joint)
@@ -845,7 +846,7 @@ def generate_tree_supports(base_points, supports_info, group_indices, model_mesh
                     cone_full = trimesh.creation.cone(
                         radius=r_base,
                         height=vert_height * 2,
-                        sections=6
+                        sections=support_sections
                     )
 
                     # Высота среза сверху (например, оставим верхние 0.5 * vert_height)
@@ -868,10 +869,19 @@ def generate_tree_supports(base_points, supports_info, group_indices, model_mesh
 
     return tree_branches
 
+def read_terminal_arg(index_position, default_value):
+    return sys.argv[index_position] if len(sys.argv)>index_position else default_value
+
 if __name__ == "__main__":
 
     file_path = os.path.join(os.path.dirname(__file__), 'cat.stl')
-    export_format = sys.argv[1] if len(sys.argv)>1 else "stl"
+    spirally_pattern = bool(int(read_terminal_arg(1, 1)))
+    min_spacing = float(read_terminal_arg(2, 0.7))
+    support_thickness = float(read_terminal_arg(3, 0.2))
+    support_cylinder_sections = int(read_terminal_arg(4, 8))
+    support_tree_sections = int(read_terminal_arg(5, 6))
+    support_joint_subdivisions = int(read_terminal_arg(6, 4))
+    export_format = read_terminal_arg(7, "stl")
 
     try:
         model = load_stl(file_path)
@@ -879,7 +889,7 @@ if __name__ == "__main__":
         print(f"Найдено нависающих граней: {len(overhang_faces)}")
 
         if overhang_faces.size > 0:
-            support_points, point_params, grid_spacing, overhang_mesh = generate_support_points(model, overhang_faces, angles)
+            support_points, point_params, grid_spacing, overhang_mesh = generate_support_points(model, overhang_faces, angles, min_spacing)
             supports_info, base_points = prepare_supports(model, support_points, point_params)
 
             base_points_array = np.array(list(base_points.values()))
@@ -887,14 +897,13 @@ if __name__ == "__main__":
             groups_1 = group_support_points(base_points_array, supports_info, grid_spacing, model)
             groups = regroup_unassigned_points(base_points_array, groups_1, supports_info, model)
 
-            spirally = True
-            if (spirally):
+            if (spirally_pattern):
                 sorted_ids_spirally = sort_points_spirally(list(base_points_array), True)
                 groups = np.array([sorted_ids_spirally]) 
         
-            supports = build_support_cylinders(supports_info)
-            support_lines = create_support_lines(base_points_array, groups, supports_info, model, thickness=0.2, min_height=1.0, spirally=spirally)
-            tree_supports = generate_tree_supports(base_points_array, supports_info, groups, model, thickness=0.2)
+            supports = build_support_cylinders(supports_info, support_cylinder_sections)
+            support_lines = create_support_lines(base_points_array, groups, supports_info, model, thickness=support_thickness, min_height=1.0, spirally=spirally_pattern, support_sections=support_cylinder_sections)
+            tree_supports = generate_tree_supports(base_points_array, supports_info, groups, model, thickness=support_thickness, support_sections=support_tree_sections, support_subdivisions=support_joint_subdivisions)
 
             if supports:
                 # Пути для сохранения только опор
