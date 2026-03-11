@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import trimesh
 import os
@@ -872,8 +873,15 @@ def generate_tree_supports(base_points, supports_info, group_indices, model_mesh
 def read_terminal_arg(index_position, default_value):
     return sys.argv[index_position] if len(sys.argv)>index_position else default_value
 
-if __name__ == "__main__":
+def benchmark(callback):
+    start = time.time()
+    res = callback()
+    end = time.time()
+    print("time is", end-start)
+    return res
 
+def main():
+    
     file_path = os.path.join(os.path.dirname(__file__), 'cat.stl')
     spirally_pattern = bool(int(read_terminal_arg(1, 1)))
     min_spacing = float(read_terminal_arg(2, 0.7))
@@ -882,9 +890,11 @@ if __name__ == "__main__":
     support_tree_sections = int(read_terminal_arg(5, 6))
     support_joint_subdivisions = int(read_terminal_arg(6, 4))
     export_format = read_terminal_arg(7, "stl")
+    need_to_benchmarked = True
 
     try:
         model = load_stl(file_path)
+        start_time = time.time() 
         overhang_faces, angles = find_overhangs(model)
         print(f"Найдено нависающих граней: {len(overhang_faces)}")
 
@@ -898,7 +908,11 @@ if __name__ == "__main__":
             groups = regroup_unassigned_points(base_points_array, groups_1, supports_info, model)
 
             if (spirally_pattern):
-                sorted_ids_spirally = sort_points_spirally(list(base_points_array), True)
+                sorted_ids_spirally = []
+                if need_to_benchmarked: 
+                    sorted_ids_spirally = benchmark(lambda: sort_points_spirally(list(base_points_array), False))
+                else: 
+                    sorted_ids_spirally = sort_points_spirally(list(base_points_array), True)
                 groups = np.array([sorted_ids_spirally]) 
         
             supports = build_support_cylinders(supports_info, support_cylinder_sections)
@@ -948,7 +962,8 @@ if __name__ == "__main__":
 
                 else:
                     print("Нет поддержек для сохранения.")
-
+                end_time = time.time()
+                print("time of executing all algo", end_time-start_time)
                 # Визуализация: модель + поддержки
                 scene = trimesh.Scene()
                 scene.add_geometry(model)
@@ -991,3 +1006,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Ошибка: {e}")
 
+if __name__ == "__main__":
+    main()
