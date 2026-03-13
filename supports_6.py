@@ -446,9 +446,15 @@ def build_support_cylinders(supports_info, support_sections=8):
     return trimesh.util.concatenate(cylinders)
 
 
+CONNECTION_PATTERNS = {
+    "default": "default", 
+    "spirally": "spirally",
+    "parallely_x": "parallely_x",
+    "parallely_y": "parallely_y"
+}
 def create_support_lines(base_points, groups, supports_info, model_mesh,
                         thickness=0.2, max_distance=5.0, min_height=1.0,
-                        height_multiplier=2.0, spirally=False, support_sections=8):
+                        height_multiplier=2.0, spirally=False, support_sections=8, break_connection_distance=10):
     print("create_support_lines")
     def create_marker_sphere(position, radius, color):
         
@@ -707,6 +713,9 @@ def create_support_lines(base_points, groups, supports_info, model_mesh,
             a, b = group[i], group[i+1]
             p1, p2 = base_points[a], base_points[b]
             dist_xy = np.linalg.norm(p1[:2] - p2[:2])
+            if(dist_xy>break_connection_distance):
+                continue
+
             required_height = dist_xy * height_multiplier
             
             # If we'd like to connect all points then we should put required_height=0
@@ -898,9 +907,11 @@ def main():
         params = json.load(file)
     
     get_param = lambda prop, default_value: get_obj_prop(params, prop, default_value) 
-    file_path = get_param("file_path", "cat.stl")
+    file_path = os.path.join(os.path.dirname(__file__), get_param("file_path", "cat.stl"))
     spirally_pattern = get_param("spirally_pattern", True)
     min_spacing = get_param("min_spacing", 0.7)
+    break_connection_distance = get_param("break_connection_distance", 10)
+    tree_root_offset = get_param("tree_root_offset", 1.0)
     support_thickness = get_param("support_thickness", 0.2)
     support_cylinder_sections = get_param("support_cylinder_sections", 8)
     support_tree_sections = get_param("support_tree_sections", 6)
@@ -932,8 +943,8 @@ def main():
                 groups = np.array([sorted_ids_spirally]) 
         
             supports = build_support_cylinders(supports_info, support_cylinder_sections)
-            support_lines = create_support_lines(base_points_array, groups, supports_info, model, thickness=support_thickness, min_height=1.0, spirally=spirally_pattern, support_sections=support_cylinder_sections)
-            tree_supports = generate_tree_supports(base_points_array, supports_info, groups, model, thickness=support_thickness, support_sections=support_tree_sections, support_subdivisions=support_joint_subdivisions)
+            support_lines = create_support_lines(base_points_array, groups, supports_info, model, thickness=support_thickness, min_height=1.0, spirally=spirally_pattern, support_sections=support_cylinder_sections, break_connection_distance=break_connection_distance)
+            tree_supports = generate_tree_supports(base_points_array, supports_info, groups, model, thickness=support_thickness, support_sections=support_tree_sections, support_subdivisions=support_joint_subdivisions, offset=tree_root_offset)
 
             if supports:
                 # Пути для сохранения только опор
