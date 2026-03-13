@@ -1,0 +1,11 @@
+{
+  "file_path": "cat.stl",
+  "spirally_pattern": true,
+  "min_spacing": 0.7,
+  "support_thickness": 0.2,
+  "support_cylinder_sections": 8,
+  "support_tree_sections": 6,
+  "support_joint_subdivisions": 2,
+  "export_format": "stl",
+  "benchmark_run": false
+}

@@ -1,4 +1,5 @@
 import time
+import json
 import numpy as np
 import trimesh
 import os
@@ -873,6 +874,14 @@ def generate_tree_supports(base_points, supports_info, group_indices, model_mesh
 def read_terminal_arg(index_position, default_value):
     return sys.argv[index_position] if len(sys.argv)>index_position else default_value
 
+def get_obj_prop(obj, prop, default_value):
+    if prop in obj:
+        return obj[prop]
+    
+    print("no such property", prop)
+    print("default value is used", default_value)
+    return default_value
+
 def benchmark(callback):
     start = time.time()
     res = callback()
@@ -882,15 +891,22 @@ def benchmark(callback):
 
 def main():
     
-    file_path = os.path.join(os.path.dirname(__file__), 'cat.stl')
-    spirally_pattern = bool(int(read_terminal_arg(1, 1)))
-    min_spacing = float(read_terminal_arg(2, 0.7))
-    support_thickness = float(read_terminal_arg(3, 0.2))
-    support_cylinder_sections = int(read_terminal_arg(4, 8))
-    support_tree_sections = int(read_terminal_arg(5, 6))
-    support_joint_subdivisions = int(read_terminal_arg(6, 4))
-    export_format = read_terminal_arg(7, "stl")
-    need_to_benchmarked = True
+    relative_params_filepath = read_terminal_arg(1, "default_params.json")
+    params_filepath = os.path.join(os.path.dirname(__file__), relative_params_filepath)
+    params = {}
+    with open(params_filepath, "r") as file:
+        params = json.load(file)
+    
+    get_param = lambda prop, default_value: get_obj_prop(params, prop, default_value) 
+    file_path = get_param("file_path", "cat.stl")
+    spirally_pattern = get_param("spirally_pattern", True)
+    min_spacing = get_param("min_spacing", 0.7)
+    support_thickness = get_param("support_thickness", 0.2)
+    support_cylinder_sections = get_param("support_cylinder_sections", 8)
+    support_tree_sections = get_param("support_tree_sections", 6)
+    support_joint_subdivisions = get_param("support_joint_subdivisions", 2)
+    export_format = get_param("export_format", "stl")
+    benchmark_run = get_param("benchmark_run", False)
 
     try:
         model = load_stl(file_path)
@@ -909,7 +925,7 @@ def main():
 
             if (spirally_pattern):
                 sorted_ids_spirally = []
-                if need_to_benchmarked: 
+                if benchmark_run: 
                     sorted_ids_spirally = benchmark(lambda: sort_points_spirally(list(base_points_array), False))
                 else: 
                     sorted_ids_spirally = sort_points_spirally(list(base_points_array), True)
