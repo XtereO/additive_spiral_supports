@@ -1,7 +1,7 @@
 {
   "file_path": "cat.stl",
   "spirally_pattern": true,
-  "min_spacing": 2,
+  "min_spacing": 0.7,
   "break_connection_distance": 10,
   "tree_root_offset": 1.0,
   "support_thickness": 0.2,
