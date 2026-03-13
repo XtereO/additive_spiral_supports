@@ -882,11 +882,11 @@ def get_obj_prop(obj, prop, default_value):
     print("default value is used", default_value)
     return default_value
 
-def benchmark(callback):
+def benchmark(callback, benchmark_title):
     start = time.time()
     res = callback()
     end = time.time()
-    print("time is", end-start)
+    print(f"[{benchmark_title}] time is", end-start)
     return res
 
 def main():
@@ -926,7 +926,7 @@ def main():
             if (spirally_pattern):
                 sorted_ids_spirally = []
                 if benchmark_run: 
-                    sorted_ids_spirally = benchmark(lambda: sort_points_spirally(list(base_points_array), False))
+                    sorted_ids_spirally = benchmark(lambda: sort_points_spirally(list(base_points_array), False), "sorting_spirally")
                 else: 
                     sorted_ids_spirally = sort_points_spirally(list(base_points_array), True)
                 groups = np.array([sorted_ids_spirally]) 
@@ -979,7 +979,7 @@ def main():
                 else:
                     print("Нет поддержек для сохранения.")
                 end_time = time.time()
-                print("time of executing all algo", end_time-start_time)
+                print("time of executing all algo is", end_time-start_time)
                 # Визуализация: модель + поддержки
                 scene = trimesh.Scene()
                 scene.add_geometry(model)
