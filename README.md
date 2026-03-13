@@ -36,7 +36,7 @@ After setting up the project we can launch the project (in root of additive_spir
 Launching parameters in json file:
 | Parameter title  | Values | Description | Default value |
 |------------------|--------|-------------|---------------|
-| file_path        | str    | relative path from the root to a stl file for generating supports | cat.stl |
+| file_path        | string | relative path from the root to a stl file for generating supports | cat.stl |
 | spirally_pattern | bool | true if it needs to connect supports spirally | true |
 | min_spacing | float | the min distance between two support points | 0.7 |
 | break_connection_distance | float | it prevents planned connection if its distance (Oxy) exceeds this value | 10 |
