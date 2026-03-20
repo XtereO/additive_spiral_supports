@@ -41,7 +41,9 @@ Launching parameters in json file:
 | min_spacing | float | the min distance between two support points | 0.7 |
 | break_connection_distance | float | it prevents planned connection if its distance (Oxy) exceeds this value | 10 |
 | tree_root_offset | float | the offset between a start of tree branch and a surface | 1.0 |
-| support_thickness | float | the thickness of cylinder supports | 0.2 |
+| support_connection_thickness | float | the thickness of cross cylinders for connecting supports | 0.2 |
+| support_tree_thickness | float | the thickness of tree supports | 0.2 |
+| support_cylinder_thickness | float | the thickness of cylinder supports | 0.3 |
 | support_cylinder_sections | int | quality of cylinder supports (the less value, the less memory it takes) | 8 |
 | support_tree_sections | int | quality of tree supports | 6 |
 | support_joint_subdivisions | int | quality of joints for connecting supports and a part (significantly influence on memory) | 4 |
