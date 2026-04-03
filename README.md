@@ -1,3 +1,6 @@
+# About this project
+![alt text](doc_imgs/poster.png)
+
 # Launching details
 ## Setting up the project
 0. This project is set up on Python 3.13.7. 
