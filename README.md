@@ -40,7 +40,7 @@ Launching parameters in json file:
 | Parameter title  | Values | Description | Default value |
 |------------------|--------|-------------|---------------|
 | file_path        | string | relative path from the root to a stl file for generating supports | cat.stl |
-| spirally_pattern | bool | true if it needs to connect supports spirally | true |
+| pattern | enum | chose a pattern to connect support points: "DEFAULT", "SPIRAL", "PARALLEL_X", "PARALLEL_Y" | "SPIRAL" |
 | min_spacing | float | the min distance between two support points | 0.7 |
 | break_connection_distance | float | it prevents planned connection if its distance (Oxy) exceeds this value | 10 |
 | tree_root_offset | float | the offset between a start of tree branch and a surface | 1.0 |

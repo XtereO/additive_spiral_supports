@@ -8,7 +8,7 @@ import io
 from scipy.spatial import cKDTree
 from collections import defaultdict
 from trimesh.ray import ray_pyembree
-from typing import List, Sequence
+from typing import List, Sequence, Enum
 from trimesh.ray.ray_pyembree import RayMeshIntersector
 from zipfile import ZipFile
 from sorting_points_spirally import sort_points_spirally
@@ -446,16 +446,15 @@ def build_support_cylinders(supports_info, support_sections=8, min_thickness=1.0
 
     return trimesh.util.concatenate(cylinders)
 
+class ConnectionPattern(Enum):
+    DEFAULT = "DEFAULT"
+    SPIRAL = "SPIRAL"
+    PARALLEL_X = "PARALLEL_X"
+    PARALLEL_Y = "PARALLEL_Y"
 
-CONNECTION_PATTERNS = {
-    "default": "default", 
-    "spirally": "spirally",
-    "parallely_x": "parallely_x",
-    "parallely_y": "parallely_y"
-}
 def create_support_lines(base_points, groups, supports_info, model_mesh,
                         thickness=0.2, max_distance=5.0, min_height=1.0,
-                        height_multiplier=2.0, spirally=False, support_sections=8, break_connection_distance=10):
+                        height_multiplier=2.0, pattern=ConnectionPattern.DEFAULT, support_sections=8, break_connection_distance=10):
     print("create_support_lines")
     thickness_radius = thickness/2
     def create_marker_sphere(position, radius, color):
@@ -708,32 +707,34 @@ def create_support_lines(base_points, groups, supports_info, model_mesh,
 
     # --------------------- Main Logic ---------------------
     support_lines = []
+    match pattern:
+        case ConnectionPattern.SPIRAL:
+            group = groups[0]
+            for i in range(group.size-1):
+                a, b = group[i], group[i+1]
+                p1, p2 = base_points[a], base_points[b]
+                dist_xy = np.linalg.norm(p1[:2] - p2[:2])
+                if(dist_xy>break_connection_distance):
+                    continue
 
-    if(spirally):
-        group = groups[0]
-        for i in range(group.size-1):
-            a, b = group[i], group[i+1]
-            p1, p2 = base_points[a], base_points[b]
-            dist_xy = np.linalg.norm(p1[:2] - p2[:2])
-            if(dist_xy>break_connection_distance):
-                continue
-
-            required_height = dist_xy * height_multiplier
+                required_height = dist_xy * height_multiplier
             
-            # If we'd like to connect all points then we should put required_height=0
-            support_lines = create_bidirectional_connection(
-                a, b, required_height=required_height,
-                support_lines=support_lines,
-                radius=thickness_radius,
-                color=[50, 250, 74, 170]
-            )
-    else:
-        # 1. Внутригрупповые соединения
-        for group in groups:
-            support_lines = process_group_connections(group, support_lines)
+                # If we'd like to connect all points then we should put required_height=0
+                support_lines = create_bidirectional_connection(
+                    a, b, required_height=required_height,
+                    support_lines=support_lines,
+                    radius=thickness_radius,
+                    color=[50, 250, 74, 170]
+                )
+        case ConnectionPattern.DEFAULT:
+            # 1. Внутригрупповые соединения
+            for group in groups:
+                support_lines = process_group_connections(group, support_lines)
 
-        # 2. Соединения между несвязанными точками
-        #support_lines = process_remaining_connections(support_lines)
+            # 2. Соединения между несвязанными точками
+            #support_lines = process_remaining_connections(support_lines)
+        case _:
+            print(f"[create_support_lines]: the pattern '{pattern}' isn't handled")
 
     return trimesh.util.concatenate(support_lines) if support_lines else None
 
@@ -910,7 +911,7 @@ def main():
     
     get_param = lambda prop, default_value: get_obj_prop(params, prop, default_value) 
     file_path = os.path.join(os.path.dirname(__file__), get_param("file_path", "cat.stl"))
-    spirally_pattern = get_param("spirally_pattern", True)
+    pattern = get_param("pattern", ConnectionPattern.DEFAULT)
     min_spacing = get_param("min_spacing", 0.7)
     break_connection_distance = get_param("break_connection_distance", 10)
     tree_root_offset = get_param("tree_root_offset", 1.0)
@@ -938,7 +939,7 @@ def main():
             groups_1 = group_support_points(base_points_array, supports_info, grid_spacing, model)
             groups = regroup_unassigned_points(base_points_array, groups_1, supports_info, model)
 
-            if (spirally_pattern):
+            if (pattern == ConnectionPattern.SPIRAL):
                 sorted_ids_spirally = []
                 if benchmark_run: 
                     sorted_ids_spirally = benchmark(lambda: sort_points_spirally(list(base_points_array), False), "sorting_spirally")
@@ -947,7 +948,7 @@ def main():
                 groups = np.array([sorted_ids_spirally]) 
         
             supports = build_support_cylinders(supports_info, support_cylinder_sections, min_thickness=support_cylinder_thickness)
-            support_lines = create_support_lines(base_points_array, groups, supports_info, model, thickness=support_connection_thickness, min_height=1.0, spirally=spirally_pattern, support_sections=support_cylinder_sections, break_connection_distance=break_connection_distance)
+            support_lines = create_support_lines(base_points_array, groups, supports_info, model, thickness=support_connection_thickness, min_height=1.0, pattern=pattern, support_sections=support_cylinder_sections, break_connection_distance=break_connection_distance)
             tree_supports = generate_tree_supports(base_points_array, supports_info, groups, model, thickness=support_tree_thickness, support_sections=support_tree_sections, support_subdivisions=support_joint_subdivisions, offset=tree_root_offset)
 
             if supports:
