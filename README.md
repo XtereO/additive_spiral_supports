@@ -7,7 +7,7 @@
 
 1. Cloning the realization of sorting points spirally in the root of the project (additive_spiral_supports):
 
-`git clone https://github.com/XtereO/sorting_points_spirally.git`
+`git clone https://github.com/XtereO/sorting_points.git`
 
 2. Initializing virtual environment for in the root of additive_spiral_supports:
 
@@ -24,10 +24,10 @@ pip install -e .
 pip install -r req.txt
 ```
 
-5. Bounding sorting_points_spirally:
+5. Bounding sorting_points:
 
 ```
-cd sorting_points_spirally
+cd sorting_points
 pip install -e .
 ```
 

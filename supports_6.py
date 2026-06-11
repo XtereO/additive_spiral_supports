@@ -11,7 +11,7 @@ from trimesh.ray import ray_pyembree
 from typing import List, Sequence, Enum
 from trimesh.ray.ray_pyembree import RayMeshIntersector
 from zipfile import ZipFile
-from sorting_points_spirally import sort_points_spirally
+from sorting_points import sort_points_spirally
 
 
 PLATFORM_OFFSET  = 2.5
