@@ -8,10 +8,11 @@ import io
 from scipy.spatial import cKDTree
 from collections import defaultdict
 from trimesh.ray import ray_pyembree
-from typing import List, Sequence, Enum
+from typing import List, Sequence
+from enum import Enum
 from trimesh.ray.ray_pyembree import RayMeshIntersector
 from zipfile import ZipFile
-from sorting_points import sort_points_spirally
+from sorting_points import sort_points_spirally, sort_points_parallelly_x, sort_points_parallelly_y
 
 
 PLATFORM_OFFSET  = 2.5
@@ -708,24 +709,24 @@ def create_support_lines(base_points, groups, supports_info, model_mesh,
     # --------------------- Main Logic ---------------------
     support_lines = []
     match pattern:
-        case ConnectionPattern.SPIRAL:
-            group = groups[0]
-            for i in range(group.size-1):
-                a, b = group[i], group[i+1]
-                p1, p2 = base_points[a], base_points[b]
-                dist_xy = np.linalg.norm(p1[:2] - p2[:2])
-                if(dist_xy>break_connection_distance):
-                    continue
+        case (ConnectionPattern.SPIRAL | ConnectionPattern.PARALLEL_X | ConnectionPattern.PARALLEL_Y):
+            for group in groups:
+                for i in range(len(group)-1):
+                    a, b = group[i], group[i+1]
+                    p1, p2 = base_points[a], base_points[b]
+                    dist_xy = np.linalg.norm(p1[:2] - p2[:2])
+                    if(dist_xy>break_connection_distance):
+                        continue
 
-                required_height = dist_xy * height_multiplier
+                    required_height = dist_xy * height_multiplier
             
-                # If we'd like to connect all points then we should put required_height=0
-                support_lines = create_bidirectional_connection(
-                    a, b, required_height=required_height,
-                    support_lines=support_lines,
-                    radius=thickness_radius,
-                    color=[50, 250, 74, 170]
-                )
+                    # If we'd like to connect all points then we should put required_height=0
+                    support_lines = create_bidirectional_connection(
+                        a, b, required_height=required_height,
+                        support_lines=support_lines,
+                        radius=thickness_radius,
+                        color=[50, 250, 74, 170]
+                    )
         case ConnectionPattern.DEFAULT:
             # 1. Внутригрупповые соединения
             for group in groups:
@@ -911,7 +912,9 @@ def main():
     
     get_param = lambda prop, default_value: get_obj_prop(params, prop, default_value) 
     file_path = os.path.join(os.path.dirname(__file__), get_param("file_path", "cat.stl"))
-    pattern = get_param("pattern", ConnectionPattern.DEFAULT)
+    pattern = ConnectionPattern(get_param("pattern", ConnectionPattern.DEFAULT))
+    showing_pattern_connection = get_param("showing_pattern_connection", False)
+    parallel_connection_max_delta = get_param("parallel_connection_max_delta", 1)
     min_spacing = get_param("min_spacing", 0.7)
     break_connection_distance = get_param("break_connection_distance", 10)
     tree_root_offset = get_param("tree_root_offset", 1.0)
@@ -939,13 +942,20 @@ def main():
             groups_1 = group_support_points(base_points_array, supports_info, grid_spacing, model)
             groups = regroup_unassigned_points(base_points_array, groups_1, supports_info, model)
 
-            if (pattern == ConnectionPattern.SPIRAL):
-                sorted_ids_spirally = []
-                if benchmark_run: 
-                    sorted_ids_spirally = benchmark(lambda: sort_points_spirally(list(base_points_array), False), "sorting_spirally")
-                else: 
-                    sorted_ids_spirally = sort_points_spirally(list(base_points_array), True)
-                groups = np.array([sorted_ids_spirally]) 
+            sort_points = None
+            list_points = list(base_points_array)
+            match pattern:
+                case ConnectionPattern.SPIRAL:
+                    sort_points = lambda: [sort_points_spirally(list_points, showing_pattern_connection)]
+                case ConnectionPattern.PARALLEL_X:
+                    sort_points = lambda: sort_points_parallelly_x(list_points, parallel_connection_max_delta, showing_pattern_connection)
+                case ConnectionPattern.PARALLEL_Y:
+                    sort_points = lambda: sort_points_parallelly_y(list_points, parallel_connection_max_delta, showing_pattern_connection)
+            if (sort_points is not None):
+                if benchmark_run:
+                    groups = benchmark(sort_points, f"sorting pattern: {pattern}")
+                else:
+                    groups = sort_points()
         
             supports = build_support_cylinders(supports_info, support_cylinder_sections, min_thickness=support_cylinder_thickness)
             support_lines = create_support_lines(base_points_array, groups, supports_info, model, thickness=support_connection_thickness, min_height=1.0, pattern=pattern, support_sections=support_cylinder_sections, break_connection_distance=break_connection_distance)
