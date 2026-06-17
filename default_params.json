@@ -3,6 +3,7 @@
   "pattern": "SPIRAL",
   "showing_pattern_connection": false,
   "parallel_connection_max_delta": 1,
+  "overhang_angle_threshold": 110,
   "min_spacing": 2.0,
   "break_connection_distance": 10,
   "tree_root_offset": 1.0,

@@ -915,6 +915,7 @@ def main():
     pattern = ConnectionPattern(get_param("pattern", ConnectionPattern.DEFAULT))
     showing_pattern_connection = get_param("showing_pattern_connection", False)
     parallel_connection_max_delta = get_param("parallel_connection_max_delta", 1)
+    overhang_angle_threshold = get_param("overhang_angle_threshold", 110)
     min_spacing = get_param("min_spacing", 0.7)
     break_connection_distance = get_param("break_connection_distance", 10)
     tree_root_offset = get_param("tree_root_offset", 1.0)
@@ -930,27 +931,26 @@ def main():
     try:
         model = load_stl(file_path)
         start_time = time.time() 
-        overhang_faces, angles = find_overhangs(model)
+        overhang_faces, angles = find_overhangs(model, overhang_angle_threshold)
         print(f"Найдено нависающих граней: {len(overhang_faces)}")
 
         if overhang_faces.size > 0:
             support_points, point_params, grid_spacing, overhang_mesh = generate_support_points(model, overhang_faces, angles, min_spacing)
             supports_info, base_points = prepare_supports(model, support_points, point_params)
 
-            base_points_array = np.array(list(base_points.values()))
-
-            groups_1 = group_support_points(base_points_array, supports_info, grid_spacing, model)
-            groups = regroup_unassigned_points(base_points_array, groups_1, supports_info, model)
-
             sort_points = None
-            list_points = list(base_points_array)
+            base_points_array = np.array(list(base_points.values()))
             match pattern:
                 case ConnectionPattern.SPIRAL:
-                    sort_points = lambda: [sort_points_spirally(list_points, showing_pattern_connection)]
+                    sort_points = lambda: [sort_points_spirally(base_points_array, showing_pattern_connection)]
                 case ConnectionPattern.PARALLEL_X:
-                    sort_points = lambda: sort_points_parallelly_x(list_points, parallel_connection_max_delta, showing_pattern_connection)
+                    sort_points = lambda: sort_points_parallelly_x(base_points_array, parallel_connection_max_delta, showing_pattern_connection)
                 case ConnectionPattern.PARALLEL_Y:
-                    sort_points = lambda: sort_points_parallelly_y(list_points, parallel_connection_max_delta, showing_pattern_connection)
+                    sort_points = lambda: sort_points_parallelly_y(base_points_array, parallel_connection_max_delta, showing_pattern_connection)
+                case ConnectionPattern.DEFAULT:
+                    sort_points = lambda: regroup_unassigned_points(base_points_array, 
+                                                                    group_support_points(base_points_array, supports_info, grid_spacing, model),
+                                                                    supports_info, model)
             if (sort_points is not None):
                 if benchmark_run:
                     groups = benchmark(sort_points, f"sorting pattern: {pattern}")
