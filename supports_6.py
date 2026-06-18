@@ -902,6 +902,13 @@ def benchmark(callback, benchmark_title):
     print(f"[{benchmark_title}] time is", end-start)
     return res
 
+def chess_shift(points, sort_parallelly, chess_shift):
+    parallel_lines_ids = sort_parallelly(points, 0.5)
+    for parallel_line_ids in parallel_lines_ids[::2]:
+        points[parallel_line_ids] += chess_shift
+    
+    return points
+
 def main():
     
     relative_params_filepath = read_terminal_arg(1, "default_params.json")
@@ -915,6 +922,8 @@ def main():
     pattern = ConnectionPattern(get_param("pattern", ConnectionPattern.DEFAULT))
     showing_pattern_connection = get_param("showing_pattern_connection", False)
     parallel_connection_max_delta = get_param("parallel_connection_max_delta", 1)
+    chess_shift_x = get_param("chess_shift_x", 0)
+    chess_shift_y = get_param("chess_shift_y", 0)
     overhang_angle_threshold = get_param("overhang_angle_threshold", 110)
     min_spacing = get_param("min_spacing", 0.7)
     break_connection_distance = get_param("break_connection_distance", 10)
@@ -938,8 +947,14 @@ def main():
             support_points, point_params, grid_spacing, overhang_mesh = generate_support_points(model, overhang_faces, angles, min_spacing)
             supports_info, base_points = prepare_supports(model, support_points, point_params)
 
-            sort_points = None
             base_points_array = np.array(list(base_points.values()))
+            if (chess_shift_x != 0):
+                base_points_array = chess_shift(base_points_array, sort_points_parallelly_x, chess_shift_x)
+            if (chess_shift_y != 0):
+                base_points_array = chess_shift(base_points_array, sort_points_parallelly_y, chess_shift_y)
+
+            sort_points = None
+            base_points_array = list(base_points_array)
             match pattern:
                 case ConnectionPattern.SPIRAL:
                     sort_points = lambda: [sort_points_spirally(base_points_array, showing_pattern_connection)]

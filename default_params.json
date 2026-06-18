@@ -1,8 +1,10 @@
 {
   "file_path": "cat.stl",
   "pattern": "SPIRAL",
-  "showing_pattern_connection": false,
+  "showing_pattern_connection": true,
   "parallel_connection_max_delta": 1,
+  "chess_shift_x": 0,
+  "chess_shift_y": 0,
   "overhang_angle_threshold": 110,
   "min_spacing": 2.0,
   "break_connection_distance": 10,
