@@ -10,6 +10,7 @@ from collections import defaultdict
 from trimesh.ray import ray_pyembree
 from typing import List, Sequence
 from enum import Enum
+from operator import itemgetter
 from trimesh.ray.ray_pyembree import RayMeshIntersector
 from zipfile import ZipFile
 from sorting_points import sort_points_spirally, sort_points_parallelly_x, sort_points_parallelly_y
@@ -111,7 +112,6 @@ def generate_support_points(mesh, overhang_faces, angles, min_distance=0.7):
         face_groups[spacing_rounded].append((face_idx, spacing_rounded, thicknesses[i]))
 
     z_min = mesh.bounds[0][2] - 10.0  # стартовая высота для лучей
-
     for spacing_key, grouped in face_groups.items():
         faces_in_group = [x[0] for x in grouped]
         spacings_group = [x[1] for x in grouped]
@@ -190,7 +190,31 @@ def generate_support_points(mesh, overhang_faces, angles, min_distance=0.7):
 
     return support_points, point_params, point_spacings, mesh.submesh([overhang_faces], only_watertight=False, append=True)
 
+def generate_support_points_z_coordinate(mesh, points):
+    z_min = mesh.bounds[0][2] - 10.0
+    ray_direction = np.array([0, 0, 1])
+    indexes = [] # the indexes are used in case len(support_points)!=len(points)
+    support_points = []
 
+    # tracing beams in Oz (>0)
+    for i, p in enumerate(points):
+        ray_origin = np.array([p[0], p[1], z_min])
+
+        locations, _, index_tri = mesh.ray.intersects_location(
+            ray_origins=[ray_origin],
+            ray_directions=[ray_direction]
+        )
+
+        if len(locations) > 0:
+            # sorting intercetions along Oz
+            sorted_hits = sorted(zip(locations, index_tri), key=lambda hit: hit[0][2])
+
+            for location, local_face_idx in sorted_hits:
+                indexes.append(i)
+                support_points.append(location)
+                break  # taking the first intercetion
+
+    return indexes, support_points
 
 def group_support_points(base_points, supports_info, point_spacings, model_mesh,
                          rect_size=(3, 2), min_height=1.0, min_support_length=2.0):
@@ -945,16 +969,21 @@ def main():
 
         if overhang_faces.size > 0:
             support_points, point_params, grid_spacing, overhang_mesh = generate_support_points(model, overhang_faces, angles, min_spacing)
-            supports_info, base_points = prepare_supports(model, support_points, point_params)
 
-            base_points_array = np.array(list(base_points.values()))
+            # modification points in Oxy "middleware"
+            mod_support_points = np.array(support_points)
             if (chess_shift_x != 0):
-                base_points_array = chess_shift(base_points_array, sort_points_parallelly_x, chess_shift_x)
+                mod_support_points = chess_shift(mod_support_points, sort_points_parallelly_x, chess_shift_x)
             if (chess_shift_y != 0):
-                base_points_array = chess_shift(base_points_array, sort_points_parallelly_y, chess_shift_y)
+                base_points_array = chess_shift(mod_support_points, sort_points_parallelly_y, chess_shift_y)
+            
+            remain_points_indexes, base_points_array = generate_support_points_z_coordinate(model, mod_support_points)
 
+            point_params = itemgetter(*remain_points_indexes)(point_params)
+            supports_info, base_points_array = prepare_supports(model, base_points_array, point_params)
+
+            base_points_array = list(base_points_array.values())
             sort_points = None
-            base_points_array = list(base_points_array)
             match pattern:
                 case ConnectionPattern.SPIRAL:
                     sort_points = lambda: [sort_points_spirally(base_points_array, showing_pattern_connection)]
