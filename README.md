@@ -42,7 +42,10 @@ Launching parameters in json file:
 | file_path        | string | relative path from the root to a stl file for generating supports | cat.stl |
 | pattern | enum | chose a pattern to connect support points: "DEFAULT", "SPIRAL", "PARALLEL_X", "PARALLEL_Y" | "SPIRAL" |
 | showing_pattern_connection | bool | true if it needs to see a result of using a chosen pattern | false |
-| parallel_connection_max_delta | float | the parameter for PARALLEL connection pattern (the max distance to connect in one line) | 1 | 
+| parallel_connection_max_delta | float | the parameter for PARALLEL connection pattern (the max distance to connect in one line) | 1 |
+| chess_shift_x | float | the offset for even lines along Ox | 0 |
+| chess_shift_y | float | the offset for even lines along Oy | 0 |
+| overhang_angle_threshold | float | the min angle to mark a facet as overhang | 110 |
 | min_spacing | float | the min distance between two support points | 0.7 |
 | break_connection_distance | float | it prevents planned connection if its distance (Oxy) exceeds this value | 10 |
 | tree_root_offset | float | the offset between a start of tree branch and a surface | 1.0 |
@@ -56,6 +59,8 @@ Launching parameters in json file:
 | benchmark_run | bool | true if it needs to benchmark a time of sorting spirally code | false |
 
 ![alt text](doc_imgs/visualized_parameters.png)
+
+![alt text](doc_imgs/visualized_parallel_parameters.png)
 
 In general launching looks like this:
 
